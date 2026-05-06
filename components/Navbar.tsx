@@ -1,286 +1,266 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, Search, Bookmark, User, Grid3x3, Plus } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Nav Constants ────────────────────────────────────────────────────────────
 
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.FC<{ className?: string }>;
-}
+const NAV_LINKS = [
+  { label: "Home", href: "/" },
+  {
+    label: "Features",
+    href: "/features",
+    dropdown: [
+      { label: "Collaboration", href: "/features/collaboration" },
+      { label: "Automation", href: "/features/automation" },
+      { label: "Integrations", href: "/features/integrations" },
+      { label: "Security", href: "/features/security" },
+    ],
+  },
+  { label: "Solutions", href: "/solutions" },
+  { label: "Analytics", href: "/analytics" },
+  { label: "Pricing", href: "/pricing" },
+] as const;
 
-interface CauseItem {
-  label: string;
-  color: string;
-  href: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+type DropdownItem = { label: string; href: string };
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Home",       href: "/",          icon: Home       },
-  { label: "Explore",    href: "/explore",   icon: Search     },
-  { label: "Categories", href: "/categories",icon: Grid3x3    },
-  { label: "Saved",      href: "/saved",     icon: Bookmark   },
-];
+// ─── Logo ─────────────────────────────────────────────────────────────────────
 
-const CAUSES: CauseItem[] = [
-  { label: "Hunger relief",  color: "#4a6e38", href: "/causes/hunger-relief"  },
-  { label: "Animal welfare", color: "#6e4a38", href: "/causes/animal-welfare" },
-  { label: "Education",      color: "#38566e", href: "/causes/education"      },
-  { label: "Conservation",   color: "#6e386a", href: "/causes/conservation"   },
-];
-
-// ─── Icons ───────────────────────────────────────────────────────────────────
-
-function TikieLogo() {
+function SocioraLogo() {
   return (
-    <div className="flex items-center gap-2 flex-shrink-0">
-      <div
-        className="w-7 h-7 rounded-[7px] flex items-center justify-content-center"
-        style={{ background: "#4a6e38" }}
+    <Link href="/" className="flex items-center gap-2.5 group select-none">
+      <svg
+        width="28"
+        height="28"
+        viewBox="0 0 28 28"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="text-[#2d5a3d] transition-transform duration-300 group-hover:rotate-12"
       >
-        <span className="text-white font-medium text-[12px] w-full text-center leading-7">
-          T
-        </span>
-      </div>
-      <span className="text-base font-medium text-[var(--tk-text)]">tikie</span>
+        <line x1="9"  y1="2"  x2="7"  y2="26" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        <line x1="21" y1="2"  x2="19" y2="26" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        <line x1="3"  y1="10" x2="25" y2="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        <line x1="2"  y1="18" x2="24" y2="18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+      <span className="text-[1.15rem] font-semibold tracking-tight text-gray-900">
+        Sociora
+      </span>
+    </Link>
+  );
+}
+
+// ─── Desktop Dropdown Panel ───────────────────────────────────────────────────
+
+function DropdownMenu({ items }: { items: readonly DropdownItem[] }) {
+  return (
+    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-52 rounded-xl border border-gray-100 bg-white shadow-lg shadow-gray-200/70 py-1.5 z-50">
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+        >
+          {item.label}
+        </Link>
+      ))}
     </div>
   );
 }
 
-// ─── Sidebar (desktop) ───────────────────────────────────────────────────────
+// ─── Desktop Nav Item ─────────────────────────────────────────────────────────
 
-function Sidebar() {
-  const pathname = usePathname();
+function NavItem({
+  link,
+  active,
+}: {
+  link: (typeof NAV_LINKS)[number];
+  active: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasDropdown = "dropdown" in link;
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   return (
-    <aside
-      className="hidden lg:flex flex-col gap-1 w-[220px] flex-shrink-0 h-screen sticky top-0
-                 border-r border-[var(--tk-border)] bg-white px-3 py-5"
-      style={{ borderColor: "rgba(0,0,0,0.1)" }}
-    >
-      {/* Logo */}
-      <div className="px-3 mb-4">
-        <Link href="/">
-          <TikieLogo />
-        </Link>
-      </div>
-
-      {/* Browse section */}
-      <p className="text-[11px] font-medium tracking-widest px-3 mb-1"
-         style={{ color: "#9b9b9b", letterSpacing: "0.06em" }}>
-        BROWSE
-      </p>
-
-      {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
-        const active = pathname === href;
-        return (
-          <Link
-            key={href}
-            href={href}
-            className="flex items-center gap-[10px] px-3 py-[9px] rounded-[9px] text-sm
-                       transition-colors duration-100"
-            style={{
-              background: active ? "#eef3e9" : "transparent",
-              color:      active ? "#2d4a20" : "#6b6b6b",
-              fontWeight: active ? 500 : 400,
-            }}
-          >
-            <Icon
-              className="w-4 h-4 flex-shrink-0"
-              style={{ stroke: active ? "#4a6e38" : "#6b6b6b" }}
-            />
-            {label}
-          </Link>
-        );
-      })}
-
-      {/* Causes section */}
-      <p className="text-[11px] font-medium tracking-widest px-3 mt-4 mb-1"
-         style={{ color: "#9b9b9b", letterSpacing: "0.06em" }}>
-        CAUSES
-      </p>
-
-      {CAUSES.map(({ label, color, href }) => (
-        <Link
-          key={href}
-          href={href}
-          className="flex items-center gap-[10px] px-3 py-[9px] rounded-[9px] text-[13px]
-                     transition-colors duration-100 hover:bg-[#f5f5f3]"
-          style={{ color: "#6b6b6b" }}
+    <div ref={ref} className="relative">
+      {hasDropdown ? (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className={`flex items-center gap-1 text-sm font-medium transition-colors px-1 py-1 ${
+            active ? "text-gray-900" : "text-gray-500 hover:text-gray-900"
+          }`}
         >
-          <span
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ background: color }}
+          {link.label}
+          <ChevronDown
+            size={14}
+            className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           />
-          {label}
-        </Link>
-      ))}
-
-      {/* Footer actions */}
-      <div
-        className="mt-auto pt-4 flex flex-col gap-1"
-        style={{ borderTop: "0.5px solid rgba(0,0,0,0.1)" }}
-      >
+        </button>
+      ) : (
         <Link
-          href="/sign-in"
-          className="flex items-center gap-[10px] px-3 py-[9px] rounded-[9px] text-[13px]
-                     transition-colors duration-100 hover:bg-[#f5f5f3]"
-          style={{ color: "#6b6b6b" }}
+          href={link.href}
+          className={`text-sm font-medium transition-colors px-1 py-1 ${
+            active ? "text-gray-900 font-semibold" : "text-gray-500 hover:text-gray-900"
+          }`}
         >
-          <User className="w-4 h-4 flex-shrink-0" style={{ stroke: "#6b6b6b" }} />
-          Sign in
+          {link.label}
         </Link>
+      )}
 
-        <Link
-          href="/sell"
-          className="flex items-center gap-[10px] px-3 py-[9px] rounded-[9px] text-[13px]
-                     font-medium transition-colors duration-100 hover:bg-[#eef3e9]"
-          style={{ color: "#4a6e38" }}
-        >
-          <Plus className="w-4 h-4 flex-shrink-0" style={{ stroke: "#4a6e38" }} />
-          Sell on Tikie
-        </Link>
-      </div>
-    </aside>
+      {hasDropdown && open && (
+        <DropdownMenu
+          items={(link as { dropdown: readonly DropdownItem[] }).dropdown}
+        />
+      )}
+    </div>
   );
 }
 
-// ─── Top bar (mobile + shared search bar on desktop) ─────────────────────────
+// ─── Navbar ───────────────────────────────────────────────────────────────────
 
-function Topbar() {
+export default function Navbar({ activePath = "/" }: { activePath?: string }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+
+  const closeMobile = () => {
+    setMobileOpen(false);
+    setMobileExpanded(null);
+  };
+
   return (
-    <header
-      className="sticky top-0 z-40 bg-white flex items-center justify-between gap-3
-                 px-4 lg:px-5 py-3 lg:py-[12px]"
-      style={{ borderBottom: "0.5px solid rgba(0,0,0,0.1)" }}
-    >
-      {/* Logo — visible on mobile only (desktop logo is in sidebar) */}
-      <div className="lg:hidden flex-shrink-0">
-        <Link href="/">
-          <TikieLogo />
-        </Link>
-      </div>
+    <header className="w-full bg-[#f0f4f2]/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-40">
+      {/* ── Top bar ── */}
+      <nav className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
+        <SocioraLogo />
 
-      {/* Search bar */}
-      <div
-        className="flex-1 max-w-[480px] flex items-center gap-2 rounded-[9px] px-3 py-2"
-        style={{
-          background:  "#f5f5f3",
-          border:      "0.5px solid rgba(0,0,0,0.1)",
-        }}
-      >
-        <Search className="w-[14px] h-[14px] flex-shrink-0 opacity-40" />
-        <span className="text-[13px]" style={{ color: "#9b9b9b" }}>
-          Search products, stores, causes...
-        </span>
-      </div>
+        {/* Desktop links */}
+        <ul className="hidden md:flex items-center gap-6">
+          {NAV_LINKS.map((link) => (
+            <li key={link.href}>
+              <NavItem link={link} active={activePath === link.href} />
+            </li>
+          ))}
+        </ul>
 
-      {/* Auth buttons — visible on all screen sizes */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <Link
-          href="/sign-in"
-          className="hidden sm:block text-[12px] px-[14px] py-[7px] rounded-[8px]
-                     transition-colors hover:bg-[#f5f5f3]"
-          style={{
-            border: "0.5px solid rgba(0,0,0,0.15)",
-            color:  "#1a1a1a",
-          }}
+        {/* Desktop CTA */}
+        <div className="hidden md:flex items-center gap-3">
+          <Link
+            href="/login"
+            className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors px-2"
+          >
+            Login
+          </Link>
+          <Link
+            href="/signup"
+            className="inline-flex items-center justify-center rounded-lg bg-gray-900 text-white text-sm font-semibold px-5 py-2.5 hover:bg-gray-700 active:scale-95 transition-all duration-150"
+          >
+            Sign Up
+          </Link>
+        </div>
+
+        {/* Hamburger — visible only below md */}
+        <button
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded={mobileOpen}
+          className="flex md:hidden items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+          onClick={() => setMobileOpen((prev) => !prev)}
         >
-          Sign in
-        </Link>
-        <Link
-          href="/get-started"
-          className="text-[12px] font-medium px-[14px] py-[7px] rounded-[8px]
-                     text-white transition-opacity hover:opacity-90"
-          style={{ background: "#4a6e38" }}
-        >
-          Get started
-        </Link>
-      </div>
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </nav>
+
+      {/* ── Mobile drawer ──
+           The drawer is JS-gated (only in DOM when mobileOpen=true).
+           We intentionally avoid md:hidden here — it can conflict with
+           Tailwind's JIT purging and suppress the panel on small screens. */}
+      {mobileOpen && (
+        <div className="border-t border-gray-100 bg-white px-4 pb-6 pt-3 shadow-lg space-y-0.5">
+          {NAV_LINKS.map((link) => {
+            const hasDropdown = "dropdown" in link;
+            const isExpanded = mobileExpanded === link.label;
+
+            return (
+              <div key={link.href} className="border-b border-gray-50 last:border-none">
+                {hasDropdown ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMobileExpanded(isExpanded ? null : link.label)
+                      }
+                      className="flex w-full items-center justify-between py-3 text-sm font-medium text-gray-800"
+                    >
+                      {link.label}
+                      <ChevronDown
+                        size={15}
+                        className={`text-gray-400 transition-transform duration-200 ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="mb-2 ml-2 space-y-0.5 border-l-2 border-gray-100 pl-3">
+                        {(link as { dropdown: readonly DropdownItem[] }).dropdown.map(
+                          (item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={closeMobile}
+                              className="block py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+                            >
+                              {item.label}
+                            </Link>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href={link.href}
+                    onClick={closeMobile}
+                    className="block py-3 text-sm font-medium text-gray-800 hover:text-gray-900 transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Mobile CTA */}
+          <div className="flex flex-col gap-3 pt-4">
+            <Link
+              href="/login"
+              onClick={closeMobile}
+              className="block text-center text-sm font-medium text-gray-700 hover:text-gray-900 py-2.5 border border-gray-200 rounded-lg transition-colors"
+            >
+              Login
+            </Link>
+            <Link
+              href="/signup"
+              onClick={closeMobile}
+              className="block text-center rounded-lg bg-gray-900 text-white text-sm font-semibold px-5 py-2.5 hover:bg-gray-700 transition-colors"
+            >
+              Sign Up
+            </Link>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
-
-// ─── Bottom nav (mobile only) ─────────────────────────────────────────────────
-
-function BottomNav() {
-  const pathname = usePathname();
-
-  const bottomItems = NAV_ITEMS.filter((item) =>
-    ["/", "/explore", "/saved"].includes(item.href)
-  ).concat([{ label: "Profile", href: "/profile", icon: User }]);
-
-  return (
-    <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-around
-                 bg-white pb-safe-area-inset-bottom"
-      style={{ borderTop: "0.5px solid rgba(0,0,0,0.1)" }}
-    >
-      {bottomItems.map(({ label, href, icon: Icon }) => {
-        const active = pathname === href;
-        return (
-          <Link
-            key={href}
-            href={href}
-            className="flex flex-col items-center gap-[3px] py-[10px] px-3
-                       min-w-[60px] transition-opacity"
-          >
-            <Icon
-              className="w-5 h-5"
-              style={{ stroke: active ? "#4a6e38" : "#9b9b9b" }}
-            />
-            <span
-              className="text-[10px] font-medium"
-              style={{ color: active ? "#4a6e38" : "#9b9b9b" }}
-            >
-              {label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
-// ─── Main export ─────────────────────────────────────────────────────────────
-
-/**
- * Navbar — responsive navigation for Tikie.
- *
- * Layout behaviour:
- *   mobile  (<lg): sticky Topbar at top  +  fixed BottomNav at bottom
- *   desktop (≥lg): sticky Topbar at top  +  Sidebar on the left (sticky, full height)
- *
- * Usage in your root layout:
- *
- *   <div className="flex min-h-screen">
- *     <Navbar />                          ← renders sidebar on desktop
- *     <div className="flex-1 flex flex-col">
- *       <NavbarTopbar />                  ← renders topbar (exported separately)
- *       <main className="flex-1 pb-16 lg:pb-0">{children}</main>
- *       <NavbarBottomNav />               ← renders bottom nav on mobile
- *     </div>
- *   </div>
- *
- * Or use the combined <Navbar /> which renders all three pieces together
- * when wrapped in the layout pattern below.
- */
-export default function Navbar() {
-  return (
-    <>
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Topbar />
-      </div>
-      <BottomNav />
-    </>
-  );
-}
-
-// Named exports for granular usage
-export { Sidebar, Topbar, BottomNav, TikieLogo };

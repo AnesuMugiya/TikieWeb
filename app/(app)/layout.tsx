@@ -1,6 +1,6 @@
 import { Sidebar, Topbar, BottomNav } from "@/components/Navbar";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <div className="flex min-h-screen">
